@@ -18,8 +18,13 @@ def minkowski_distance(a, b, p=2):
     Returns:
         float: Minkowski distance between arrays a and b.
     """
+    termino = 0
+    for d in range(len(a)):
+        val = abs(a[d]-b[d])**p
+        termino += val
+    distance=termino **(1/p)
 
-    # TODO
+    return distance
 
 
 # k-Nearest Neighbors Model
