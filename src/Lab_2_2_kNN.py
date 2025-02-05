@@ -39,7 +39,6 @@ class knn:
         self.p = None
         self.x_train = None
         self.y_train = None
-
     def fit(self, X_train: np.ndarray, y_train: np.ndarray, k: int = 5, p: int = 2):
         """
         Fit the model using X as training data and y as target values.
@@ -55,8 +54,15 @@ class knn:
             k (int, optional): Number of neighbors to use. Defaults to 5.
             p (int, optional): The degree of the Minkowski distance. Defaults to 2.
         """
-        # TODO
-
+        if X_train.shape[0] != y_train.shape[0]:
+            raise ValueError("Length of X_train and y_train must be equal.")
+        if k <= 0 or p <= 0:
+            raise ValueError("k and p must be positive integers.")
+        self.k=k
+        self.p=p
+        self.x_train=X_train
+        self.y_train=y_train
+        self.classes=np.unique(y_train)
     def predict(self, X: np.ndarray) -> np.ndarray:
         """
         Predict the class labels for the provided data.
@@ -67,7 +73,13 @@ class knn:
         Returns:
             np.ndarray: Predicted class labels.
         """
-        # TODO
+        labels=[]
+        for x in X:
+            distances=self.compute_distances(x)
+            neighbours=self.get_k_nearest_neighbors(distances)
+            label=self.most_common_label(neighbours)
+            labels.append(label)
+        return labels
 
     def predict_proba(self, X):
         """
@@ -82,7 +94,16 @@ class knn:
         Returns:
             np.ndarray: Predicted class probabilities.
         """
-        # TODO
+        proba_matrix = np.zeros((X.shape[0],len(self.classes)),dtype=float)
+        for i, x in enumerate(X):
+            distances=self.compute_distances(x)
+            neighbours=self.get_k_nearest_neighbors(distances)
+            knn_labels=self.y_train[neighbours]
+            unique_labels,frecuencia=np.unique(knn_labels,return_counts=True)
+            for label, count in zip(unique_labels, frecuencia):
+                label_index = np.where(self.classes == label)[0][0]
+                proba_matrix=[i, label_index]=(count/self.k)
+        return proba_matrix
 
     def compute_distances(self, point: np.ndarray) -> np.ndarray:
         """Compute distance from a point to every point in the training dataset
@@ -93,8 +114,11 @@ class knn:
         Returns:
             np.ndarray: distance from point to each point in the training dataset.
         """
-        # TODO
-
+        distances=[]
+        for punto in self.x_train:
+            distancia=minkowski_distance(point,punto)
+            distances.append(distancia)
+        return distances
     def get_k_nearest_neighbors(self, distances: np.ndarray) -> np.ndarray:
         """Get the k nearest neighbors indices given the distances matrix from a point.
 
@@ -107,8 +131,9 @@ class knn:
         Hint:
             You might want to check the np.argsort function.
         """
-        # TODO
-
+        distances_index_sorted=np.argsort(distances)
+        neighbours=distances_index_sorted[:self.k]
+        return neighbours
     def most_common_label(self, knn_labels: np.ndarray) -> int:
         """Obtain the most common label from the labels of the k nearest neighbors
 
@@ -118,7 +143,13 @@ class knn:
         Returns:
             int: most common label
         """
-        # TODO
+        max_label=0
+        unique_labels,frecuencia=np.unique(knn_labels,return_counts=True)
+        for i in range(len(unique_labels)):
+            if frecuencia[i] > max_label:
+                max_label=frecuencia[i]
+                index_max=i
+        return unique_labels[index_max]
 
     def __str__(self):
         """
