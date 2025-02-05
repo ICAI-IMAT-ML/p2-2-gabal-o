@@ -255,23 +255,43 @@ def evaluate_classification_metrics(y_true, y_pred, positive_label):
     y_pred_mapped = np.array([1 if label == positive_label else 0 for label in y_pred])
 
     # Confusion Matrix
-    # TODO
+    tp=0
+    tn=0
+    fp=0
+    fn=0
+    for i in range(len(y_true_mapped)):
+        if y_true_mapped[i] == positive_label:
+            if y_true_mapped[i]==y_pred_mapped[i]:
+                tp+=1
+            else:
+                fn+=1
+        else:
+            if y_true_mapped[i]== y_pred_mapped[i]:
+                tn+=1
+            else:
+                fp+=1
 
-    # Accuracy
-    # TODO
+    if tp == 0 and tn == 0:  #Evitamos que nos salga error de division por 0
+        accuracy=0.0
+        precision=0.0
+        recall=0.0
+        specificity=0.0
+        f1=0.0
+    else:
+        # Accuracy
+        accuracy=(tp+tn)/(tp+tn+fp+fn)
 
-    # Precision
-    # TODO
+        # Precision
+        precision= (tp)/(tp+fp)
 
-    # Recall (Sensitivity)
-    # TODO
+        # Recall (Sensitivity)
+        recall=(tp)/(tp+fn)
 
-    # Specificity
-    # TODO
+        # Specificity
+        specificity=(tn)/(tn+fp)
 
-    # F1 Score
-    # TODO
-
+        # F1 Score
+        f1= 2*(precision*recall) / (precision+recall)
     return {
         "Confusion Matrix": [tn, fp, fn, tp],
         "Accuracy": accuracy,
@@ -306,7 +326,31 @@ def plot_calibration_curve(y_true, y_probs, positive_label, n_bins=10):
             - "true_proportions": Array of the fraction of positives in each bin
 
     """
-    # TODO
+        # Convert y_true to binary (0 or 1)
+    y_true_mapped = np.array([1 if label == positive_label else 0 for label in y_true])
+    y_probs = np.array(y_probs)
+
+    # Define bin edges and initialize storage
+    bin_edges = np.linspace(0, 1, n_bins + 1)
+    true_proportions = np.zeros(n_bins)
+    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2
+
+    # Compute fraction of positives in each bin
+    for i in range(n_bins):
+        bin_mask = (y_probs >= bin_edges[i]) & (y_probs < bin_edges[i + 1])
+        bin_y_true = y_true_mapped[bin_mask]
+        true_proportions[i] = np.mean(bin_y_true) if len(bin_y_true) > 0 else 0  # Avoid NaN
+
+    
+    plt.figure(figsize=(7, 5))
+    plt.plot(bin_centers, true_proportions, "o-", label="Calibration curve", color="blue")
+    plt.plot([0, 1], [0, 1], "--", color="gray", label="Perfectly calibrated")
+    plt.xlabel("Mean predicted probability")
+    plt.ylabel("Fraction of positives")
+    plt.title("Calibration Curve (Manual Computation)")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
     return {"bin_centers": bin_centers, "true_proportions": true_proportions}
 
 
@@ -336,8 +380,23 @@ def plot_probability_histograms(y_true, y_probs, positive_label, n_bins=10):
                 Array of predicted probabilities for the negative class.
 
     """
-    # TODO
+    y_true_mapped = np.array([1 if label == positive_label else 0 for label in y_true])
+    y_probs = np.array(y_probs) 
 
+    positive_probs = y_probs[y_true_mapped == 1]
+    negative_probs = y_probs[y_true_mapped == 0]
+
+    # Plot histograms
+    plt.figure(figsize=(8, 5))
+    sns.histplot(positive_probs, bins=n_bins, color="blue", label="Positive Class", kde=True, alpha=0.6)
+    sns.histplot(negative_probs, bins=n_bins, color="red", label="Negative Class", kde=True, alpha=0.6)
+    
+    plt.xlabel("Probabilidad")
+    plt.ylabel("Frecuencia")
+    plt.title("Distribución de probabilidad de las clases positiva y negativa")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
     return {
         "array_passed_to_histogram_of_positive_class": y_probs[y_true_mapped == 1],
         "array_passed_to_histogram_of_negative_class": y_probs[y_true_mapped == 0],
@@ -366,5 +425,39 @@ def plot_roc_curve(y_true, y_probs, positive_label):
             - "tpr": Array of True Positive Rates for each threshold.
 
     """
-    # TODO
+       # Convert y_true to binary (0 or 1)
+    y_true_mapped = np.array([1 if label == positive_label else 0 for label in y_true])
+    y_probs = np.array(y_probs)
+    np.append(y_probs,0)
+    np.append(y_probs,1)
+    # Get unique thresholds (sorted in descending order)
+    thresholds = np.linspace(0, 1, 11)
+
+    tpr = []
+    fpr = []
+
+    # Compute TPR and FPR for each threshold
+    for threshold in thresholds:
+        y_pred = (y_probs >= threshold).astype(int)  # Convert probabilities to binary predictions
+
+        tp = np.sum((y_pred == 1) & (y_true_mapped == 1))  # True Positives
+        fn = np.sum((y_pred == 0) & (y_true_mapped == 1))  # False Negatives
+        fp = np.sum((y_pred == 1) & (y_true_mapped == 0))  # False Positives
+        tn = np.sum((y_pred == 0) & (y_true_mapped == 0))  # True Negatives
+
+        tpr.append(tp / (tp + fn) if (tp + fn) > 0 else 0)  # TPR = TP / (TP + FN)
+        fpr.append(fp / (fp + tn) if (fp + tn) > 0 else 0)  # FPR = FP / (FP + TN)
+
+
+    # Plot ROC Curve
+    plt.figure(figsize=(7, 5))
+    plt.plot(fpr, tpr, marker="o", linestyle="-", label="ROC Curve", color="blue")  # FIXED
+    plt.plot([0, 1], [0, 1], "--", color="gray", label="Random Classifier (Baseline)")
+    
+    plt.xlabel("False Positive Rate (FPR)")
+    plt.ylabel("True Positive Rate (TPR)")
+    plt.title("Receiver Operating Characteristic (ROC) Curve")
+    plt.legend()
+    plt.grid(True)
+    plt.show()
     return {"fpr": np.array(fpr), "tpr": np.array(tpr)}
