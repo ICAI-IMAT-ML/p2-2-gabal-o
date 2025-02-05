@@ -94,16 +94,17 @@ class knn:
         Returns:
             np.ndarray: Predicted class probabilities.
         """
-        proba_matrix = np.zeros((X.shape[0],len(self.classes)),dtype=float)
-        for i, x in enumerate(X):
-            distances=self.compute_distances(x)
+        probabilidades=[]
+        for j in range(len(X)):
+            distances=self.compute_distances(X[j])
             neighbours=self.get_k_nearest_neighbors(distances)
             knn_labels=self.y_train[neighbours]
-            unique_labels,frecuencia=np.unique(knn_labels,return_counts=True)
-            for label, count in zip(unique_labels, frecuencia):
-                label_index = np.where(self.classes == label)[0][0]
-                proba_matrix=[i, label_index]=(count/self.k)
-        return proba_matrix
+            probs=[0]*len(self.classes)
+            for i,clase in enumerate(self.classes):
+                count=(knn_labels == clase).sum()
+                probs[i] = count / self.k
+        probabilidades.append(probs)
+        return np.array(probabilidades)
 
     def compute_distances(self, point: np.ndarray) -> np.ndarray:
         """Compute distance from a point to every point in the training dataset
