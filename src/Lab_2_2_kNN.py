@@ -255,43 +255,26 @@ def evaluate_classification_metrics(y_true, y_pred, positive_label):
     y_pred_mapped = np.array([1 if label == positive_label else 0 for label in y_pred])
 
     # Confusion Matrix
-    tp=0
-    tn=0
-    fp=0
-    fn=0
-    for i in range(len(y_true_mapped)):
-        if y_true_mapped[i] == positive_label:
-            if y_true_mapped[i]==y_pred_mapped[i]:
-                tp+=1
-            else:
-                fn+=1
-        else:
-            if y_true_mapped[i]== y_pred_mapped[i]:
-                tn+=1
-            else:
-                fp+=1
+    tp = np.sum((y_true_mapped == 1) & (y_pred_mapped == 1))  # Verdaderos positivos
+    tn = np.sum((y_true_mapped == 0) & (y_pred_mapped == 0))  # Verdaderos negativos
+    fp = np.sum((y_true_mapped == 0) & (y_pred_mapped == 1))  # Falsos positivos
+    fn = np.sum((y_true_mapped == 1) & (y_pred_mapped == 0))  # Falsos negativos
 
-    if tp == 0 and tn == 0:  #Evitamos que nos salga error de division por 0
-        accuracy=0.0
-        precision=0.0
-        recall=0.0
-        specificity=0.0
-        f1=0.0
-    else:
-        # Accuracy
-        accuracy=(tp+tn)/(tp+tn+fp+fn)
 
-        # Precision
-        precision= (tp)/(tp+fp)
+    # Accuracy
+    accuracy = (tp + tn) / (tp + tn + fp + fn) if (tp + tn + fp + fn) > 0 else 0
 
-        # Recall (Sensitivity)
-        recall=(tp)/(tp+fn)
+    # Precision
+    precision = tp / (tp + fp) if (tp + fp) > 0 else 0
 
-        # Specificity
-        specificity=(tn)/(tn+fp)
+    # Recall (Sensitivity)
+    recall = tp / (tp + fn) if (tp + fn) > 0 else 0
 
-        # F1 Score
-        f1= 2*(precision*recall) / (precision+recall)
+    # Specificity
+    specificity = tn / (tn + fp) if (tn + fp) > 0 else 0
+
+    # F1 Score
+    f1 = 2 * (precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
     return {
         "Confusion Matrix": [tn, fp, fn, tp],
         "Accuracy": accuracy,
