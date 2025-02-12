@@ -77,9 +77,9 @@ class knn:
         for x in X:
             distances=self.compute_distances(x)
             neighbours=self.get_k_nearest_neighbors(distances)
-            label=self.most_common_label(neighbours)
+            label=self.most_common_label(self.y_train[neighbours])
             labels.append(label)
-        return labels
+        return np.array(labels)
 
     def predict_proba(self, X):
         """
@@ -103,7 +103,7 @@ class knn:
             for i,clase in enumerate(self.classes):
                 count=(knn_labels == clase).sum()
                 probs[i] = count / self.k
-        probabilidades.append(probs)
+            probabilidades.append(probs)
         return np.array(probabilidades)
 
     def compute_distances(self, point: np.ndarray) -> np.ndarray:
